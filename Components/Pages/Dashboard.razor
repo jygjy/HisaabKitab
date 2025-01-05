@@ -1,11 +1,14 @@
-@page "/home"
+@page "/dashboard"
 @using HisaabKitab.Services
 @inject UserService UserService
 @inject NavigationManager NavigationManager
 
-<link href="css/home.css" rel="stylesheet" />
 
-<div class="home-container">
+
+
+<link href="css/dashboard.css" rel="stylesheet" />
+
+<div class="dashboard-container">
     <!-- Sidebar -->
     <div class="sidebar">
         <h3>My Dashboard</h3>
@@ -22,21 +25,19 @@
     <div class="content-area">
         @if (CurrentView == "Home")
         {
-            <h2>Welcome, to Hisaab KItaab!</h2>
-            <p>This is your personalized home page. Use the sidebar to navigate through different sections.</p>
+            <HomeComponent />
         }
         else if (CurrentView == "Dashboard")
         {
-            <h2>Dashboard</h2>
-            <p>This is the main dashboard area. More features will be added soon.</p>
+            <DashboardComponent />
         }
         else if (CurrentView == "CashInFlow")
         {
-            <Pages.CashInFlowPage />
+            <CashInFlowComponent />
         }
         else if (CurrentView == "CashOutFlow")
         {
-            <Pages.CashOutFlowPage />
+            <CashOutFlowComponent />
         }
     </div>
 </div>

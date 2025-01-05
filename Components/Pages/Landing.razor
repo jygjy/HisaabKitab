@@ -1,0 +1,27 @@
+@page "/"
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<link href="css/landing.css" rel="stylesheet" />
+
+<div class="landing-container">
+    <h1>Welcome to HisaabKitab App.</h1>
+    <p>The best way to manage your money.</p>
+
+    <div>
+        <button @onclick="NavigateToRegister">Register</button>
+        <button @onclick="NavigateToLogin">Login</button>
+    </div>
+</div>
+
+@code {
+    private void NavigateToRegister()
+    {
+        NavigationManager.NavigateTo("/register");
+    }
+
+    private void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+}

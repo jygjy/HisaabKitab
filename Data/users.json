@@ -1,0 +1,7 @@
+[
+    {
+        "Username": "testuser",
+        "Password": "replace_with_hashed_password",
+        "Email": "test@example.com"
+    }
+]

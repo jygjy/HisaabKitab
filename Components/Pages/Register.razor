@@ -1,0 +1,117 @@
+@page "/register"
+@using HisaabKitab.Models
+@using HisaabKitab.Services
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<link href="css/register.css" rel="stylesheet" />
+
+<div class="register-container">
+    <h3>Register</h3>
+
+    <div>
+        <!-- Username -->
+        <input @bind="RegisterUsername" placeholder="Username" />
+    </div>
+
+    <div>
+        <!-- Password -->
+        <input @bind="RegisterPassword" placeholder="Password" type="password" />
+    </div>
+
+    <div>
+        <!-- Confirm Password -->
+        <input @bind="ConfirmPassword" placeholder="Confirm Password" type="password" />
+    </div>
+
+    <div>
+        <!-- Preferred Currency -->
+        <select @bind="PreferredCurrency">
+            <option value="">Select Preferred Currency</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="INR">INR</option>
+            <option value="JPY">JPY</option>
+            <option value="NRS">NRS</option>
+        </select>
+    </div>
+
+    <div>
+        <!-- Register Button -->
+        <button @onclick="HandleRegister">Register</button>
+    </div>
+
+    <p>Already have an account? <a @onclick="NavigateToLogin">Login</a></p>
+</div>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p class="@MessageType">@Message</p>
+}
+
+@code {
+    private string RegisterUsername = "";
+    private string RegisterPassword = "";
+    private string ConfirmPassword = "";
+    private string PreferredCurrency = "";
+    private string Message = "";
+    private string MessageType = ""; // 'error' or 'success'
+    private List<User> Users = new();
+
+    protected override void OnInitialized()
+    {
+        Users = UserService.LoadUsers();  // Load users from the service
+    }
+
+    private async void HandleRegister()
+    {
+        MessageType = "error";
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(RegisterUsername) ||
+            string.IsNullOrWhiteSpace(RegisterPassword) ||
+            string.IsNullOrWhiteSpace(ConfirmPassword) ||
+            string.IsNullOrWhiteSpace(PreferredCurrency))
+        {
+            Message = "All fields are required.";
+            return;
+        }
+
+        // Check if passwords match
+        if (RegisterPassword != ConfirmPassword)
+        {
+            Message = "Passwords do not match.";
+            return;
+        }
+
+        // Check if username already exists
+        if (Users.Any(u => u.Username == RegisterUsername))
+        {
+            Message = "Username already exists.";
+            return;
+        }
+
+        // Create new user
+        var newUser = new User
+            {
+                Username = RegisterUsername,
+                Password = UserService.HashPassword(RegisterPassword),
+                PreferredCurrency = PreferredCurrency
+            };
+
+        // Add and save user
+        Users.Add(newUser);
+        UserService.SaveUsers(Users);
+
+        Message = "Registration successful. Redirecting to login...";
+        MessageType = "success";
+        await Task.Delay(2000);
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+}
+

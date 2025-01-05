@@ -1,6 +1,12 @@
-﻿<Router AppAssembly="@typeof(MauiProgram).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+﻿@using HisaabKitab.Components.Layout
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeView">
+        <RouteView RouteData="@routeView" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeView" Selector="h1" />
     </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>YOU are in progress !!.</p>
+        </LayoutView>
+    </NotFound>
 </Router>

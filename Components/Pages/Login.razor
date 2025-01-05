@@ -1,0 +1,63 @@
+@page "/login"
+@using HisaabKitab.Models
+@using HisaabKitab.Services
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<link href="css/login.css" rel="stylesheet" />
+
+<div class="login-container">
+    <h3>Login</h3>
+
+    <div>
+        <input @bind="LoginUsername" placeholder="Username" />
+    </div>
+    <div>
+        <input @bind="LoginPassword" placeholder="Password" type="password" />
+    </div>
+    <div>
+        <button @onclick="PerformLogin">Login</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="@MessageType">@Message</p>
+    }
+
+    <p>Need an account? <a @onclick="NavigateToRegister">Register</a></p>
+</div>
+
+@code {
+    private string LoginUsername = "";
+    private string LoginPassword = "";
+    private string Message = "";
+    private string MessageType = ""; // 'error' or 'success'
+
+    private async Task PerformLogin()
+    {
+        if (string.IsNullOrWhiteSpace(LoginUsername) || string.IsNullOrWhiteSpace(LoginPassword))
+        {
+            MessageType = "error";
+            Message = "Please enter both username and password.";
+            return;
+        }
+
+        if (UserService.Login(LoginUsername, LoginPassword))
+        {
+            MessageType = "success";
+            Message = "Login successful. Redirecting to dashboard...";
+            await Task.Delay(2000);  // Wait for the message to display
+            NavigationManager.NavigateTo("/dashboard");  // Redirect to the dashboard page
+        }
+        else
+        {
+            MessageType = "error";
+            Message = "Invalid username or password.";
+        }
+    }
+
+    private void NavigateToRegister()
+    {
+        NavigationManager.NavigateTo("/register");
+    }
+}

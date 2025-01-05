@@ -1,0 +1,75 @@
+/* Login Page Styling */
+
+.login-container {
+    max-width: 400px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+    /* Header Styling */
+    .login-container h3 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    /* Input Fields Styling */
+    .login-container input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    /* Submit Button Styling */
+    .login-container button {
+        width: 100%;
+        background-color: blue;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+        .login-container button:hover {
+            background-color: darkblue;
+        }
+
+    /* Success and Error Messages */
+    .login-container p {
+        font-size: 14px;
+        margin-top: 10px;
+        text-align: center;
+    }
+
+        .login-container p.error {
+            color: red;
+        }
+
+        .login-container p.success {
+            color: green;
+        }
+
+    /* Link for Register */
+    .login-container a {
+        color: green;
+        text-decoration: none;
+        font-size: 14px;
+        text-align: center;
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+        .login-container a:hover {
+            text-decoration: underline;
+        }

@@ -1,0 +1,237 @@
+@page "/dashboardcomponent"
+@using HisaabKitab.Services
+@using HisaabKitab.Models
+@inject CashFlowService CashFlowService
+
+<link href="css/dashboardcomponent.css" rel="stylesheet" />
+
+<h2>Dashboard</h2>
+
+@if (IsLoading)
+{
+    <p class="loading-message">Loading dashboard data, please wait...</p>
+}
+else if (IsError)
+{
+    <p class="error-message">@ErrorMessage</p>
+}
+else
+{
+    <!-- Summary Section -->
+    <div class="dashboard-summary">
+        <div class="summary-card">
+            <h3>Total Inflows</h3>
+            <p>@Inflows.ToString("C")</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Total Outflows</h3>
+            <p>@Outflows.ToString("C")</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Balance</h3>
+            <p>@Balance.ToString("C")</p>
+        </div>
+    </div>
+
+    <!-- Categories Section -->
+    <div class="categories-section">
+        <h3>Categories</h3>
+        <ul>
+            @foreach (var category in Categories)
+            {
+                <li>@category.Key: @category.Value%</li>
+            }
+        </ul>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="statistics-section">
+        <h3>Statistics</h3>
+        <p>Statistics graph placeholder (You can replace this with a chart)</p>
+    </div>
+
+    <!-- Reminders Section -->
+    <div class="reminders-section">
+        <h3>Reminders</h3>
+        <ul>
+            @foreach (var reminder in Reminders)
+            {
+                <li><input type="checkbox" /> @reminder</li>
+            }
+        </ul>
+    </div>
+
+    <!-- Cleared Debts Section -->
+    <div class="cleared-debts-section">
+        <h3>Cleared Debts</h3>
+        <ul>
+            @foreach (var debt in ClearedDebts)
+            {
+                <li><input type="checkbox" checked disabled /> @debt</li>
+            }
+        </ul>
+    </div>
+
+    <!-- Filter and Sort Section -->
+    <div class="filter-sort-container">
+        <h3>Filter and Sort</h3>
+
+        <div class="filter-sort-item">
+            <label for="startDate">Date Range:</label>
+            <input type="date" id="startDate" @bind="StartDate" /> -
+            <input type="date" id="endDate" @bind="EndDate" />
+        </div>
+
+        <div class="filter-sort-item">
+            <label for="filterTag">Tag:</label>
+            <input type="text" id="filterTag" @bind="FilterTag" placeholder="Enter tag" />
+        </div>
+
+        <div class="filter-sort-item">
+            <label for="sortBy">Sort By:</label>
+            <select id="sortBy" @bind="SortBy">
+                <option value="date">Date</option>
+                <option value="amount">Amount</option>
+            </select>
+            <select id="sortOrder" @bind="SortOrder">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+        </div>
+
+        <div class="filter-sort-actions">
+            <button @onclick="ApplyFilters">Apply Filters</button>
+        </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div class="transactions-section">
+        <h3>Transactions</h3>
+        <div>
+            <strong>Highest Inflow:</strong> @HighestInflow.ToString("C")
+        </div>
+        <div>
+            <strong>Lowest Inflow:</strong> @LowestInflow.ToString("C")
+        </div>
+        <div>
+            <strong>Highest Outflow:</strong> @HighestOutflow.ToString("C")
+        </div>
+        <div>
+            <strong>Lowest Outflow:</strong> @LowestOutflow.ToString("C")
+        </div>
+    </div>
+}
+
+@code {
+    private decimal Inflows;
+    private decimal Outflows;
+    private decimal Balance;
+    private decimal HighestInflow;
+    private decimal LowestInflow;
+    private decimal HighestOutflow;
+    private decimal LowestOutflow;
+    private DateTime? StartDate;
+    private DateTime? EndDate;
+    private string FilterTag = string.Empty;
+    private string SortBy = "date";
+    private string SortOrder = "asc";
+    private bool IsLoading = true;
+    private bool IsError = false;
+    private string ErrorMessage = string.Empty;
+    private Dictionary<string, decimal> Categories = new();
+    private List<string> Reminders = new();
+    private List<string> ClearedDebts = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDashboardData();
+    }
+
+    private void LoadDashboardData()
+    {
+        try
+        {
+            Inflows = CashFlowService.GetTotalInflows();
+            Outflows = CashFlowService.GetTotalOutflows();
+            Balance = CashFlowService.GetBalance();
+
+            var inflows = CashFlowService.LoadCashInFlows();
+            var outflows = CashFlowService.LoadCashOutFlows();
+
+            if (inflows.Any())
+            {
+                HighestInflow = inflows.Max(i => i.Amount);
+                LowestInflow = inflows.Min(i => i.Amount);
+            }
+
+            if (outflows.Any())
+            {
+                HighestOutflow = outflows.Max(o => o.Amount);
+                LowestOutflow = outflows.Min(o => o.Amount);
+            }
+
+            // Calculate categories breakdown
+            Categories = outflows.GroupBy(o => o.Category)
+                                 .ToDictionary(g => g.Key, g => Math.Round((g.Sum(o => o.Amount) / Outflows) * 100, 2));
+
+            // Load reminders
+            Reminders = new List<string> { "Daraz Payment", "Payment to Ram", "Cashback to Hari", "Bike servicing payment" };
+
+            // Load cleared debts (placeholder data)
+            ClearedDebts = new List<string> { "Fee Payment", "Rent Payment" };
+        }
+        catch (Exception ex)
+        {
+            IsError = true;
+            ErrorMessage = $"An error occurred while loading the dashboard data: {ex.Message}";
+            Console.WriteLine($"Error loading dashboard data: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        try
+        {
+            IsLoading = true;
+            var filteredInflows = CashFlowService.FilterCashInFlows(StartDate, EndDate, FilterTag);
+            var filteredOutflows = CashFlowService.FilterCashOutFlows(StartDate, EndDate, FilterTag);
+
+            if (SortBy == "date")
+            {
+                filteredInflows = CashFlowService.SortCashInFlows(filteredInflows, "date", SortOrder == "asc");
+                filteredOutflows = CashFlowService.SortCashOutFlows(filteredOutflows, "date", SortOrder == "asc");
+            }
+            else if (SortBy == "amount")
+            {
+                filteredInflows = CashFlowService.SortCashInFlows(filteredInflows, "amount", SortOrder == "asc");
+                filteredOutflows = CashFlowService.SortCashOutFlows(filteredOutflows, "amount", SortOrder == "asc");
+            }
+
+            Inflows = filteredInflows.Sum(i => i.Amount);
+            Outflows = filteredOutflows.Sum(o => o.Amount);
+            Balance = Inflows - Outflows;
+
+            // Update highest and lowest transactions after filtering
+            HighestInflow = filteredInflows.Any() ? filteredInflows.Max(i => i.Amount) : 0;
+            LowestInflow = filteredInflows.Any() ? filteredInflows.Min(i => i.Amount) : 0;
+            HighestOutflow = filteredOutflows.Any() ? filteredOutflows.Max(o => o.Amount) : 0;
+            LowestOutflow = filteredOutflows.Any() ? filteredOutflows.Min(o => o.Amount) : 0;
+        }
+        catch (Exception ex)
+        {
+            IsError = true;
+            ErrorMessage = $"An error occurred while applying filters: {ex.Message}";
+            Console.WriteLine($"Error applying filters: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

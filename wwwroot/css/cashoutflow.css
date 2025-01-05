@@ -1,0 +1,82 @@
+/* Container styling */
+.form-container {
+    width: 50%;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Section heading */
+h2, h3 {
+    text-align: center;
+    color: #333;
+}
+
+/* Form group styling */
+.form-group {
+    margin-bottom: 15px;
+}
+
+    .form-group label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+/* Button group styling */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+    .button-group button {
+        width: 48%;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+/* Add button styling */
+.add-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+    .add-btn:hover {
+        background-color: #218838;
+    }
+
+/* Cancel button styling */
+.cancel-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+    .cancel-btn:hover {
+        background-color: #c82333;
+    }
+
+/* Status message styling */
+.message {
+    text-align: center;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #28a745;
+}

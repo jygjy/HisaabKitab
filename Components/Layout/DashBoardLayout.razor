@@ -1,0 +1,36 @@
+@* @inherits LayoutComponentBase *@
+@* @inject NavigationManager NavigationManager *@
+
+@* <div class="dashboard-layout"> *@
+@*     <div class="sidebar"> *@
+@*         <h3>My Dashboard</h3> *@
+@*         <ul> *@
+@*             <li><NavLink href="/home/dashboard" class="nav-button">Dashboard</NavLink></li> *@
+@*             <li><NavLink href="/home/cashinflow" class="nav-button">Cash In Flow</NavLink></li> *@
+@*             <li><NavLink href="/home/cashoutflow" class="nav-button">Cash Out Flow</NavLink></li> *@
+@*             <li><button class="logout-btn" @onclick="Logout">Logout</button></li> *@
+@*         </ul> *@
+@*     </div> *@
+@*     <main class="content"> *@
+@*         @Body *@
+@*     </main> *@
+@* </div> *@
+
+@* @code { *@
+@*     private void Logout() *@
+@*     { *@
+@*         NavigationManager.NavigateTo("/login"); *@
+@*     } *@
+@* } *@
+
+@inherits LayoutComponentBase
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

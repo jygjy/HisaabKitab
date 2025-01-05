@@ -1,0 +1,112 @@
+@page "/dashboard/cashinflow"
+@using HisaabKitab.Models
+@inject HisaabKitab.Services.CashFlowService CashFlowService
+@inject NavigationManager NavigationManager
+
+<link href="css/cashinflow.css" rel="stylesheet" />
+
+<h2>Cash In Flow</h2>
+
+<div class="form-container">
+    <h3>Add Cash In Flow</h3>
+
+    <div class="form-group">
+        <label for="amount">Amount</label>
+        <input id="amount" type="number" @bind="Amount" />
+    </div>
+
+    <div class="form-group">
+        <label for="source">Source</label>
+        <input id="source" type="text" @bind="Source" />
+    </div>
+
+    <div class="form-group">
+        <label for="date">Date</label>
+        <input id="date" type="date" @bind="Date" />
+    </div>
+
+    <div class="form-group">
+        <label for="tags">Tags</label>
+        <input id="tags" type="text" @bind="SelectedTag" />
+    </div>
+
+    <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" @bind="Notes"></textarea>
+    </div>
+
+    <div class="button-group">
+        <button class="add-btn" @onclick="AddDeposit">Add Deposit</button>
+        <button class="cancel-btn" @onclick="Cancel">Cancel</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="message">@Message</p>
+    }
+</div>
+
+@code {
+    private decimal Amount;
+    private string Source = string.Empty;
+    private DateTime Date = DateTime.Today;
+    private string SelectedTag = string.Empty;
+    private string Notes = string.Empty;
+    private string Message = string.Empty; // To display status messages
+
+    private async Task AddDeposit()
+    {
+        try
+        {
+            // Check for valid input
+            if (Amount <= 0)
+            {
+                Message = "Amount must be greater than zero.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Source))
+            {
+                Message = "Source cannot be empty.";
+                return;
+            }
+
+            // Create a new Cash In Flow entry
+            var cashInFlow = new CIF
+                {
+                    Amount = Amount,
+                    Source = Source,
+                    Date = Date,
+                    Tags = SelectedTag,
+                    Notes = Notes
+                };
+
+            // Call the service to save the entry
+            CashFlowService.AddCashInFlow(cashInFlow);
+
+            // Clear the form and display success message
+            ClearForm();
+            Message = "Cash In Flow added successfully!";
+        }
+        catch (Exception ex)
+        {
+            // Log the error and display a message
+            Console.WriteLine($"Error adding cash inflow: {ex.Message}");
+            Message = "An error occurred while adding the cash inflow. Please try again.";
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/dashboard");
+    }
+
+    private void ClearForm()
+    {
+        Amount = 0;
+        Source = string.Empty;
+        Date = DateTime.Today;
+        SelectedTag = string.Empty;
+        Notes = string.Empty;
+    }
+}

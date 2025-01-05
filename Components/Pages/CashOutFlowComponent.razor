@@ -1,0 +1,121 @@
+
+
+ @page "/dashboard/cashoutflow"
+@using HisaabKitab.Models
+@inject HisaabKitab.Services.CashFlowService CashFlowService
+@inject NavigationManager NavigationManager
+
+<link href="css/cashoutflow.css" rel="stylesheet" />
+
+<h2>Cash Out Flow</h2>
+
+<div class="form-container">
+    <h3>Add Cash Out Flow</h3>
+
+    <div class="form-group">
+        <label for="amount">Amount</label>
+        <input id="amount" type="number" @bind="Amount" />
+    </div>
+
+    <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" @bind="SelectedCategory">
+            <option value="">Select</option>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Bills">Bills</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="date">Date</label>
+        <input id="date" type="date" @bind="Date" />
+    </div>
+
+    <div class="form-group">
+        <label for="balance-indicator">Balance Indicator</label>
+        <select id="balance-indicator" @bind="SelectedBalanceIndicator">
+            <option value="">Select</option>
+            <option value="Debit">Debit</option>
+            <option value="Expense">Expense</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="tags">Tags</label>
+        <input id="tags" type="text" @bind="SelectedTag" />
+    </div>
+
+    <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" @bind="Notes"></textarea>
+    </div>
+
+    <div class="button-group">
+        <button class="add-btn" @onclick="AddExpense">Add Expense</button>
+        <button class="cancel-btn" @onclick="Cancel">Cancel</button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="message">@Message</p>
+    }
+</div>
+
+@code {
+    private decimal Amount;
+    private string SelectedCategory = string.Empty;
+    private DateTime Date = DateTime.Today;
+    private string SelectedBalanceIndicator = string.Empty;
+    private string SelectedTag = string.Empty;
+    private string Notes = string.Empty;
+    private string Message = string.Empty;
+
+    private async Task AddExpense()
+    {
+        try
+        {
+            if (Amount <= 0 || string.IsNullOrEmpty(SelectedCategory) || string.IsNullOrEmpty(SelectedBalanceIndicator))
+            {
+                Message = "Please fill in all required fields!";
+                return;
+            }
+
+            var cashOutFlow = new COF
+                {
+                    Amount = Amount,
+                    Category = SelectedCategory,
+                    Date = Date,
+                    BalanceIndicator = SelectedBalanceIndicator,
+                    Tags = SelectedTag,
+                    Notes = Notes
+                };
+
+            CashFlowService.AddCashOutFlow(cashOutFlow);
+            Message = "Cash Out Flow added successfully!";
+            ClearForm();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adding Cash Out Flow: {ex.Message}");
+            Message = "An error occurred while adding the cash out flow.";
+        }
+    }
+
+    private void ClearForm()
+    {
+        Amount = 0;
+        SelectedCategory = string.Empty;
+        Date = DateTime.Today;
+        SelectedBalanceIndicator = string.Empty;
+        SelectedTag = string.Empty;
+        Notes = string.Empty;
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/dashboard");
+    }
+}
