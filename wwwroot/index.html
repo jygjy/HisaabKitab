@@ -24,7 +24,56 @@
     </div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        function downloadPdf(transactions) {
+            console.log("Received transactions data:", transactions);
+
+            if (!transactions || transactions.length === 0) {
+                alert("No transactions available to generate the PDF.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add title
+            doc.setFontSize(16);
+            doc.text("Transactions Report", 20, 20);
+
+            // Prepare table headers and rows
+            const headers = ["Type", "Amount", "Category", "Date", "Tags", "Notes"];
+            const data = transactions.map(t => [
+                t.Type || "N/A",
+                t.Amount || 0,
+                t.Category || "N/A",
+                t.Date || "N/A",
+                t.Tags || "N/A",
+                t.Notes || "N/A"
+            ]);
+
+            console.log("Headers:", headers);
+            console.log("Data prepared for PDF:", data);
+
+            // Add table to PDF
+            doc.autoTable({
+                head: [headers],
+                body: data,
+                startY: 30
+            });
+
+            // Save the PDF
+            doc.save("transactions_report.pdf");
+        }
+
+    </script>
+
+
+
 
 </body>
+
 
 </html>

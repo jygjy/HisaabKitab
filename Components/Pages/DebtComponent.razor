@@ -1,0 +1,74 @@
+@page "/dashboard/debt"
+@using HisaabKitab.Models
+@inject HisaabKitab.Services.CashFlowService CashFlowService
+@inject IJSRuntime JSRuntime
+
+<link href="css/debt.css" rel="stylesheet" />
+
+<h2>Add Debt</h2>
+
+<div class="form-container">
+    <h3>New Debt Entry</h3>
+
+    <div class="form-group">
+        <label for="source">Source</label>
+        <input id="source" type="text" @bind="Source" placeholder="Lender name" />
+    </div>
+
+    <div class="form-group">
+        <label for="amount">Amount</label>
+        <input id="amount" type="number" @bind="Amount" placeholder="Debt amount" />
+    </div>
+
+    <div class="form-group">
+        <label for="dueDate">Due Date</label>
+        <input id="dueDate" type="date" @bind="DueDate" />
+    </div>
+
+    <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" @bind="Notes" placeholder="Additional notes (optional)"></textarea>
+    </div>
+
+    <div class="button-group">
+        <button class="add-btn" @onclick="AddDebt">Add Debt</button>
+        <button class="cancel-btn" @onclick="ClearForm">Cancel</button>
+    </div>
+</div>
+
+@code {
+    private string Source = string.Empty;
+    private decimal Amount;
+    private DateTime DueDate = DateTime.Today;
+    private string Notes = string.Empty;
+
+    private async Task AddDebt()
+    {
+        if (string.IsNullOrEmpty(Source) || Amount <= 0)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Please fill in all required fields!");
+            return;
+        }
+
+        var newDebt = new Debt
+            {
+                Source = Source,
+                Amount = Amount,
+                DueDate = DueDate,
+                Notes = Notes,
+                IsCleared = false
+            };
+
+        CashFlowService.AddDebt(newDebt);
+        await JSRuntime.InvokeVoidAsync("alert", "Debt added successfully!");
+        ClearForm();
+    }
+
+    private void ClearForm()
+    {
+        Source = string.Empty;
+        Amount = 0;
+        DueDate = DateTime.Today;
+        Notes = string.Empty;
+    }
+}

@@ -1,0 +1,386 @@
+@page "/transactions"
+@using HisaabKitab.Models
+@inject HisaabKitab.Services.CashFlowService CashFlowService
+@inject IJSRuntime JSRuntime
+
+<link href="css/transaction.css" rel="stylesheet" />
+
+<h2>All Transactions</h2>
+
+<div class="filter-sort-container">
+    <h3>Filter and Sort</h3>
+
+    <div class="filter-sort-row">
+        <div class="filter-sort-item">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" @bind="StartDate" />
+        </div>
+
+        <div class="filter-sort-item">
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" @bind="EndDate" />
+        </div>
+    </div>
+
+    <div class="filter-sort-row">
+        <div class="filter-sort-item">
+            <label for="filterTag">Tag:</label>
+            <input type="text" id="filterTag" @bind="FilterTag" placeholder="Enter tag" />
+        </div>
+
+        <div class="filter-sort-item">
+            <label for="sortBy">Sort By:</label>
+            <select id="sortBy" @bind="SortBy">
+                <option value="date">Date</option>
+                <option value="amount">Amount</option>
+            </select>
+        </div>
+
+        <div class="filter-sort-item">
+            <label for="sortOrder">Sort Order:</label>
+            <select id="sortOrder" @bind="SortOrder">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+        </div>
+
+        <!-- New Type Filter -->
+        <div class="filter-sort-item">
+            <label for="filterType">Type:</label>
+            <select id="filterType" @bind="FilterType">
+                <option value="">All</option>
+                <option value="Inflow">Inflow</option>
+                <option value="Outflow">Outflow</option>
+                <option value="Debt">Debt</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="filter-sort-actions">
+        <button @onclick="ApplyFilters">Apply Filters</button>
+    </div>
+</div>
+
+
+@if (IsLoading)
+{
+    <p>Loading transactions, please wait...</p>
+}
+else if (FilteredTransactions.Count == 0)
+{
+    <p>No transactions available.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Tags</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in FilteredTransactions)
+            {
+                <tr>
+                    <td>@transaction.Type</td>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.Category</td>
+                    <td>@transaction.Date.ToShortDateString()</td>
+                    <td>@transaction.Tags</td>
+                    <td>@transaction.Notes</td>
+                    <td>
+                        @if (transaction.Type == "Debt" && !transaction.IsCleared)
+                        {
+                            <button class="clear-debt-btn" @onclick="() => ClearDebt(transaction)">Clear Debt</button>
+                        }
+                        else
+                        {
+                            <button class="edit-btn" @onclick="() => EditTransaction(transaction)">Edit</button>
+                            <button class="delete-btn" @onclick="() => DeleteTransaction(transaction)">Delete</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="download-section">
+        <button @onclick="DownloadPDF" class="download-pdf-btn">Download PDF</button>
+    </div>
+
+}
+
+<!-- Edit Transaction Modal -->
+@if (IsEditing)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <h3>Edit Transaction (@EditingType)</h3>
+
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input id="amount" type="number" @bind="EditingAmount" />
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input id="category" type="text" @bind="EditingCategory" />
+            </div>
+
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input id="date" type="date" @bind="EditingDate" />
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags</label>
+                <input id="tags" type="text" @bind="EditingTags" />
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea id="notes" @bind="EditingNotes"></textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="save-btn" @onclick="SaveTransaction">Save</button>
+                <button class="cancel-btn" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <!-- Transactions Summary Section -->
+    <div class="transaction-summary">
+        <h3>Transactions Summary</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h4>Inflows</h4>
+                <p>Count: @InflowCount</p>
+                <p>Total: @InflowTotal.ToString("C")</p>
+            </div>
+            <div class="summary-item">
+                <h4>Outflows</h4>
+                <p>Count: @OutflowCount</p>
+                <p>Total: @OutflowTotal.ToString("C")</p>
+            </div>
+            <div class="summary-item">
+                <h4>Debts</h4>
+                <p>Count: @DebtCount</p>
+                <p>Total: @DebtTotal.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@code {
+    private List<dynamic> Transactions = new();
+    private List<dynamic> FilteredTransactions = new();
+    private bool IsLoading = true;
+    private bool IsEditing = false;
+    private Guid EditingId;
+    private string EditingType = string.Empty;
+    private decimal EditingAmount;
+    private string EditingCategory = string.Empty;
+    private DateTime EditingDate;
+    private string EditingTags = string.Empty;
+    private string EditingNotes = string.Empty;
+
+    private DateTime? StartDate;
+    private DateTime? EndDate;
+    private string FilterTag = string.Empty;
+    private string SortBy = "date";
+    private string SortOrder = "asc";
+    private string FilterType = string.Empty;
+
+
+    private int InflowCount;
+    private int OutflowCount;
+    private int DebtCount;
+    private decimal InflowTotal;
+    private decimal OutflowTotal;
+    private decimal DebtTotal;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Transactions = CashFlowService.LoadAllTransactions();
+            FilteredTransactions = new List<dynamic>(Transactions); // Initialize filtered list
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to load transactions.");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        // Apply date range filter
+        FilteredTransactions = Transactions
+            .Where(t => (!StartDate.HasValue || t.Date >= StartDate.Value) &&
+                        (!EndDate.HasValue || t.Date <= EndDate.Value))
+            .ToList();
+
+        // Apply tag filter
+        if (!string.IsNullOrEmpty(FilterTag))
+        {
+            FilteredTransactions = FilteredTransactions
+                .Where(t => t.Tags?.Contains(FilterTag, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+        }
+
+        // Apply type filter
+        if (!string.IsNullOrEmpty(FilterType))
+        {
+            FilteredTransactions = FilteredTransactions
+                .Where(t => t.Type == FilterType)
+                .ToList();
+        }
+
+        // Apply sorting
+        if (SortBy == "date")
+        {
+            FilteredTransactions = SortOrder == "asc"
+                ? FilteredTransactions.OrderBy(t => t.Date).ToList()
+                : FilteredTransactions.OrderByDescending(t => t.Date).ToList();
+        }
+        else if (SortBy == "amount")
+        {
+            FilteredTransactions = SortOrder == "asc"
+                ? FilteredTransactions.OrderBy(t => t.Amount).ToList()
+                : FilteredTransactions.OrderByDescending(t => t.Amount).ToList();
+        }
+
+        // Calculate summary counts and totals
+        // InflowCount = FilteredTransactions.Count(t => t.Type == "Inflow");
+        // OutflowCount = FilteredTransactions.Count(t => t.Type == "Outflow");
+        // DebtCount = FilteredTransactions.Count(t => t.Type == "Debt");
+
+        // InflowTotal = FilteredTransactions.Where(t => t.Type == "Inflow").Sum(t => t.Amount);
+        // OutflowTotal = FilteredTransactions.Where(t => t.Type == "Outflow").Sum(t => t.Amount);
+        // DebtTotal = FilteredTransactions.Where(t => t.Type == "Debt").Sum(t => t.Amount);
+    }
+
+
+
+
+    private void EditTransaction(dynamic transaction)
+    {
+        EditingId = transaction.Id;
+        EditingType = transaction.Type;
+        EditingAmount = transaction.Amount;
+        EditingCategory = transaction.Category;
+        EditingDate = transaction.Date;
+        EditingTags = transaction.Tags;
+        EditingNotes = transaction.Notes;
+        IsEditing = true;
+    }
+
+    private async Task SaveTransaction()
+    {
+        try
+        {
+            CashFlowService.UpdateTransaction(EditingType, EditingId, EditingAmount, EditingCategory, EditingDate, EditingTags, EditingNotes);
+            Transactions = CashFlowService.LoadAllTransactions(); // Refresh the list
+            ApplyFilters(); // Re-apply filters after update
+            IsEditing = false;
+            await JSRuntime.InvokeVoidAsync("alert", "Transaction updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving transaction: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to save transaction.");
+        }
+    }
+
+    private async Task DeleteTransaction(dynamic transaction)
+    {
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this transaction?");
+            if (confirm)
+            {
+                CashFlowService.DeleteTransaction(transaction.Type, transaction.Id);
+                Transactions = CashFlowService.LoadAllTransactions(); // Refresh the list
+                ApplyFilters(); // Re-apply filters after deletion
+                await JSRuntime.InvokeVoidAsync("alert", "Transaction deleted successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting transaction: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to delete transaction.");
+        }
+    }
+
+    private async Task ClearDebt(dynamic debt)
+    {
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to clear this debt?");
+            if (confirm)
+            {
+                if (CashFlowService.GetBalance() >= debt.Amount)
+                {
+                    CashFlowService.ClearDebt(debt.Id); // Mark debt as cleared
+                    Transactions = CashFlowService.LoadAllTransactions(); // Refresh the list
+                    ApplyFilters(); // Re-apply filters after clearing debt
+                    await JSRuntime.InvokeVoidAsync("alert", "Debt cleared successfully!");
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Insufficient balance to clear this debt.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error clearing debt: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to clear debt.");
+        }
+    }
+
+    private void CancelEdit()
+    {
+        IsEditing = false;
+    }
+    private async Task DownloadPDF()
+    {
+        Console.WriteLine("Filtered Transactions Count: " + FilteredTransactions.Count);
+
+        foreach (var transaction in FilteredTransactions)
+        {
+            Console.WriteLine($"Transaction: Type={transaction.Type}, Amount={transaction.Amount}, Category={transaction.Category}, Date={transaction.Date}, Tags={transaction.Tags}, Notes={transaction.Notes}");
+        }
+
+        var transactionsData = FilteredTransactions.Select(t => new
+        {
+            Type = string.IsNullOrEmpty(t.Type) ? "N/A" : t.Type,
+            Amount = t.Amount,
+            Category = string.IsNullOrEmpty(t.Category) ? "N/A" : t.Category,
+            Date = t.Date.ToShortDateString(),
+            Tags = string.IsNullOrEmpty(t.Tags) ? "N/A" : t.Tags,
+            Notes = string.IsNullOrEmpty(t.Notes) ? "N/A" : t.Notes
+        }).ToList();
+
+        await JSRuntime.InvokeVoidAsync("downloadPdf", transactionsData);
+    }
+
+
+
+
+
+}

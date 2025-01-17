@@ -3,6 +3,7 @@
 @using HisaabKitab.Services
 @inject UserService UserService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <link href="css/register.css" rel="stylesheet" />
 
@@ -63,7 +64,7 @@
         Users = UserService.LoadUsers();  // Load users from the service
     }
 
-    private async void HandleRegister()
+    private async Task HandleRegister()
     {
         MessageType = "error";
 
@@ -74,6 +75,7 @@
             string.IsNullOrWhiteSpace(PreferredCurrency))
         {
             Message = "All fields are required.";
+            await JSRuntime.InvokeVoidAsync("alert", "All fields are required.");
             return;
         }
 
@@ -81,6 +83,7 @@
         if (RegisterPassword != ConfirmPassword)
         {
             Message = "Passwords do not match.";
+            await JSRuntime.InvokeVoidAsync("alert", "Passwords do not match.");
             return;
         }
 
@@ -88,6 +91,7 @@
         if (Users.Any(u => u.Username == RegisterUsername))
         {
             Message = "Username already exists.";
+            await JSRuntime.InvokeVoidAsync("alert", "Username already exists.");
             return;
         }
 
@@ -105,6 +109,7 @@
 
         Message = "Registration successful. Redirecting to login...";
         MessageType = "success";
+        await JSRuntime.InvokeVoidAsync("alert", "Registration successful. Redirecting to login...");
         await Task.Delay(2000);
         NavigationManager.NavigateTo("/login");
     }
@@ -114,4 +119,3 @@
         NavigationManager.NavigateTo("/login");
     }
 }
-

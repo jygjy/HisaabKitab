@@ -2,6 +2,7 @@
 {
     public class COF
     {
+        public Guid Id { get; set; } = Guid.NewGuid();
         public decimal Amount { get; set; }
         public string Category { get; set; } = string.Empty;
         public DateTime Date { get; set; }

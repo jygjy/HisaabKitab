@@ -2,6 +2,7 @@
 @using HisaabKitab.Services
 @using HisaabKitab.Models
 @inject CashFlowService CashFlowService
+@inject IJSRuntime JSRuntime
 
 <link href="css/dashboardcomponent.css" rel="stylesheet" />
 
@@ -17,39 +18,103 @@ else if (IsError)
 }
 else
 {
-    <!-- Summary Section -->
-    <div class="dashboard-summary">
-        <div class="summary-card">
-            <h3>Total Inflows</h3>
-            <p>@Inflows.ToString("C")</p>
+    <!-- Dashboard Main Content: Summary + Filter and Sort -->
+    <div class="dashboard-main-content">
+        <!-- Summary Section -->
+        <div class="dashboard-summary">
+            <div class="summary-card">
+                <h3>Total Inflows</h3>
+                <p>@Inflows.ToString("C")</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Total Outflows</h3>
+                <p>@Outflows.ToString("C")</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Balance</h3>
+                <p>@Balance.ToString("C")</p>
+            </div>
         </div>
 
-        <div class="summary-card">
-            <h3>Total Outflows</h3>
-            <p>@Outflows.ToString("C")</p>
+        <!-- Filter and Sort Section -->
+        <div class="filter-sort-container">
+            <div class="filter-sort-header">Filter and Sort</div>
+
+            <div class="filter-sort-grid">
+                <!-- Date Range Filter -->
+                <div class="filter-sort-item">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" @bind="StartDate" />
+                </div>
+                <div class="filter-sort-item">
+                    <label for="endDate">End Date:</label>
+                    <input type="date" id="endDate" @bind="EndDate" />
+                </div>
+
+                <!-- Tag Filter -->
+                <div class="filter-sort-item">
+                    <label for="filterTag">Tag:</label>
+                    <input type="text" id="filterTag" @bind="FilterTag" placeholder="Enter tag" />
+                </div>
+
+                <!-- Sort By Filter -->
+                <div class="filter-sort-item">
+                    <label for="sortBy">Sort By:</label>
+                    <select id="sortBy" @bind="SortBy">
+                        <option value="date">Date</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                </div>
+
+                <!-- Sort Order Filter -->
+                <div class="filter-sort-item">
+                    <label for="sortOrder">Sort Order:</label>
+                    <select id="sortOrder" @bind="SortOrder">
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-sort-actions">
+                <button @onclick="ApplyFilters">Apply Filters</button>
+            </div>
         </div>
 
-        <div class="summary-card">
-            <h3>Balance</h3>
-            <p>@Balance.ToString("C")</p>
-        </div>
+
     </div>
+
+
 
     <!-- Categories Section -->
     <div class="categories-section">
         <h3>Categories</h3>
-        <ul>
-            @foreach (var category in Categories)
-            {
-                <li>@category.Key: @category.Value%</li>
-            }
-        </ul>
+        <table class="categories-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in Categories)
+                {
+                    <tr>
+                        <td>@category.Key</td>
+                        <td>@category.Value %</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
+
 
     <!-- Statistics Section -->
     <div class="statistics-section">
         <h3>Statistics</h3>
-        <p>Statistics graph placeholder (You can replace this with a chart)</p>
+        <p>There is problem in displaying graph</p>
     </div>
 
     <!-- Reminders Section -->
@@ -63,65 +128,168 @@ else
         </ul>
     </div>
 
+    <!-- Pending Debts Section -->
+    <div class="debts-section">
+        <h3>Pending Debts</h3>
+        <table class="debts-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (PendingDebts.Count == 0)
+                {
+                    <tr>
+                        <td colspan="4" class="no-debts">No pending debts</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var debt in PendingDebts)
+                    {
+                        <tr>
+                            <td>@debt.Source</td>
+                            <td>@debt.Amount.ToString("C")</td>
+                            <td>@debt.DueDate.ToShortDateString()</td>
+                            <td>
+                                <button class="clear-debt-btn" @onclick="() => ClearDebt(debt.Id)">Clear Debt</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+
+
     <!-- Cleared Debts Section -->
     <div class="cleared-debts-section">
         <h3>Cleared Debts</h3>
-        <ul>
-            @foreach (var debt in ClearedDebts)
-            {
-                <li><input type="checkbox" checked disabled /> @debt</li>
-            }
-        </ul>
+        <table class="debts-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Amount</th>
+                    <th>Cleared Date</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ClearedDebts.Count == 0)
+                {
+                    <tr>
+                        <td colspan="4" class="no-debts">No cleared debts</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var debt in ClearedDebts)
+                    {
+                        <tr>
+                            <td>@debt.Source</td>
+                            <td>@debt.Amount.ToString("C")</td>
+                            <td>@debt.ClearedDate.ToShortDateString()</td>
+                            <td>@debt.Notes</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
 
-    <!-- Filter and Sort Section -->
-    <div class="filter-sort-container">
-        <h3>Filter and Sort</h3>
 
-        <div class="filter-sort-item">
-            <label for="startDate">Date Range:</label>
-            <input type="date" id="startDate" @bind="StartDate" /> -
-            <input type="date" id="endDate" @bind="EndDate" />
-        </div>
 
-        <div class="filter-sort-item">
-            <label for="filterTag">Tag:</label>
-            <input type="text" id="filterTag" @bind="FilterTag" placeholder="Enter tag" />
-        </div>
-
-        <div class="filter-sort-item">
-            <label for="sortBy">Sort By:</label>
-            <select id="sortBy" @bind="SortBy">
-                <option value="date">Date</option>
-                <option value="amount">Amount</option>
-            </select>
-            <select id="sortOrder" @bind="SortOrder">
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-            </select>
-        </div>
-
-        <div class="filter-sort-actions">
-            <button @onclick="ApplyFilters">Apply Filters</button>
-        </div>
-    </div>
 
     <!-- Transactions Section -->
-    <div class="transactions-section">
+    <div class="transactions-container">
         <h3>Transactions</h3>
-        <div>
-            <strong>Highest Inflow:</strong> @HighestInflow.ToString("C")
-        </div>
-        <div>
-            <strong>Lowest Inflow:</strong> @LowestInflow.ToString("C")
-        </div>
-        <div>
-            <strong>Highest Outflow:</strong> @HighestOutflow.ToString("C")
-        </div>
-        <div>
-            <strong>Lowest Outflow:</strong> @LowestOutflow.ToString("C")
+        <div class="transactions-content">
+            <!-- Inflows Table -->
+            <div class="transaction-column">
+                <h4>Inflows</h4>
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Highest</td>
+                            <td>@HighestInflow.ToString("C")</td>
+                            <td>@HighestInflowDate.ToShortDateString()</td>
+                        </tr>
+                        <tr>
+                            <td>Lowest</td>
+                            <td>@LowestInflow.ToString("C")</td>
+                            <td>@LowestInflowDate.ToShortDateString()</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Outflows Table -->
+            <div class="transaction-column">
+                <h4>Outflows</h4>
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Highest</td>
+                            <td>@HighestOutflow.ToString("C")</td>
+                            <td>@HighestOutflowDate.ToShortDateString()</td>
+                        </tr>
+                        <tr>
+                            <td>Lowest</td>
+                            <td>@LowestOutflow.ToString("C")</td>
+                            <td>@LowestOutflowDate.ToShortDateString()</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Debts Table -->
+            <div class="transaction-column">
+                <h4>Debts</h4>
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Highest</td>
+                            <td>@HighestDebt.ToString("C")</td>
+                            <td>@HighestDebtDate.ToShortDateString()</td>
+                        </tr>
+                        <tr>
+                            <td>Lowest</td>
+                            <td>@LowestDebt.ToString("C")</td>
+                            <td>@LowestDebtDate.ToShortDateString()</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+
 }
 
 @code {
@@ -142,7 +310,19 @@ else
     private string ErrorMessage = string.Empty;
     private Dictionary<string, decimal> Categories = new();
     private List<string> Reminders = new();
-    private List<string> ClearedDebts = new();
+    private List<Debt> ClearedDebts = new();
+    private List<Debt> PendingDebts = new();
+    private DateTime HighestInflowDate;
+    private DateTime LowestInflowDate;
+    private DateTime HighestOutflowDate;
+    private DateTime LowestOutflowDate;
+
+
+    private decimal HighestDebt;
+    private decimal LowestDebt;
+    private DateTime HighestDebtDate;
+    private DateTime LowestDebtDate;
+
 
     protected override void OnInitialized()
     {
@@ -159,18 +339,36 @@ else
 
             var inflows = CashFlowService.LoadCashInFlows();
             var outflows = CashFlowService.LoadCashOutFlows();
+            PendingDebts = CashFlowService.LoadDebts().Where(d => !d.IsCleared).ToList();
+            ClearedDebts = CashFlowService.GetClearedDebts(); // Ensure this method returns List<Debt>
+
 
             if (inflows.Any())
             {
                 HighestInflow = inflows.Max(i => i.Amount);
                 LowestInflow = inflows.Min(i => i.Amount);
+                HighestInflowDate = inflows.OrderByDescending(i => i.Amount).First().Date;
+                LowestInflowDate = inflows.OrderBy(i => i.Amount).First().Date;
             }
 
             if (outflows.Any())
             {
                 HighestOutflow = outflows.Max(o => o.Amount);
                 LowestOutflow = outflows.Min(o => o.Amount);
+                HighestOutflowDate = outflows.OrderByDescending(o => o.Amount).First().Date;
+                LowestOutflowDate = outflows.OrderBy(o => o.Amount).First().Date;
             }
+
+            var debts = CashFlowService.LoadDebts().Where(d => !d.IsCleared).ToList();
+
+            if (debts.Any())
+            {
+                HighestDebt = debts.Max(d => d.Amount);
+                LowestDebt = debts.Min(d => d.Amount);
+                HighestDebtDate = debts.OrderByDescending(d => d.Amount).First().DueDate;
+                LowestDebtDate = debts.OrderBy(d => d.Amount).First().DueDate;
+            }
+
 
             // Calculate categories breakdown
             Categories = outflows.GroupBy(o => o.Category)
@@ -178,9 +376,6 @@ else
 
             // Load reminders
             Reminders = new List<string> { "Daraz Payment", "Payment to Ram", "Cashback to Hari", "Bike servicing payment" };
-
-            // Load cleared debts (placeholder data)
-            ClearedDebts = new List<string> { "Fee Payment", "Rent Payment" };
         }
         catch (Exception ex)
         {
@@ -191,6 +386,25 @@ else
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private async Task ClearDebt(Guid debtId)
+    {
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to clear this debt?");
+            if (confirm)
+            {
+                CashFlowService.ClearDebt(debtId);
+                LoadDashboardData(); // Refresh the dashboard data
+                await JSRuntime.InvokeVoidAsync("alert", "Debt cleared successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error clearing debt: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to clear debt.");
         }
     }
 
@@ -235,3 +449,4 @@ else
         }
     }
 }
+

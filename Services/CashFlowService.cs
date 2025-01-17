@@ -79,12 +79,32 @@ namespace HisaabKitab.Services
         }
 
         // Add a New Debt
+        //public void AddDebt(Debt debt)
+        //{
+        //    var debts = LoadDebts();
+        //    debts.Add(debt);
+        //    SaveDebts(debts);
+        //}
         public void AddDebt(Debt debt)
         {
             var debts = LoadDebts();
             debts.Add(debt);
             SaveDebts(debts);
+
+            // Record the debt as a cash inflow to increase the balance
+            var inflows = LoadCashInFlows();
+            inflows.Add(new CIF
+            {
+                Id = Guid.NewGuid(),
+                Amount = debt.Amount,
+                Source = debt.Source,
+                Date = debt.DueDate,
+                Tags = "Debt",
+                Notes = $"Debt added from {debt.Source}"
+            });
+            SaveCashInFlows(inflows);
         }
+
 
         // Get Total Inflows
         public decimal GetTotalInflows()
@@ -109,9 +129,10 @@ namespace HisaabKitab.Services
         // Get Cleared Debts
         public List<Debt> GetClearedDebts()
         {
-            var debts = LoadDebts();
-            return debts.Where(d => d.IsCleared).ToList();
+            return LoadDebts().Where(d => d.IsCleared).ToList();
         }
+
+
 
         // Save and Load Reminders
         public List<string> LoadReminders()
@@ -185,6 +206,7 @@ namespace HisaabKitab.Services
             };
         }
 
+
         // Sort Cash Outflows by Date or Amount
         public List<COF> SortCashOutFlows(List<COF> outflows, string sortBy, bool ascending = true)
         {
@@ -195,5 +217,135 @@ namespace HisaabKitab.Services
                 _ => outflows
             };
         }
+        public List<dynamic> LoadAllTransactions()
+        {
+            var inflows = LoadCashInFlows().Select(i => new
+            {
+                Id = i.Id,
+                Type = "Inflow",
+                Amount = i.Amount,
+                Category = i.Source, // Display Source as Category for inflows
+                Date = i.Date,
+                Tags = i.Tags,
+                Notes = i.Notes
+            });
+
+            var outflows = LoadCashOutFlows().Select(o => new
+            {
+                Id = o.Id,
+                Type = "Outflow",
+                Amount = o.Amount,
+                Category = o.Category,
+                Date = o.Date,
+                Tags = o.Tags,
+                Notes = o.Notes
+            });
+            var debts = LoadDebts().Select(d => new
+            {
+                Id = d.Id,
+                Type = "Debt",
+                Amount = d.Amount,
+                Category = d.Source, // Display Source as Category for debts
+                Date = d.DueDate,
+                Tags = "Debt",
+                Notes = d.Notes,
+                IsCleared = d.IsCleared // Include cleared status for debts
+            });
+            return inflows.Concat(outflows).ToList<dynamic>();
+        }
+
+
+
+
+
+
+        public void UpdateTransaction(string type, Guid id, decimal amount, string category, DateTime date, string tags, string notes)
+        {
+            if (type == "Inflow")
+            {
+                var inflows = LoadCashInFlows();
+                var inflow = inflows.FirstOrDefault(i => i.Id == id);
+                if (inflow != null)
+                {
+                    inflow.Amount = amount;
+                    inflow.Source = category; // Update Source for inflows
+                    inflow.Date = date;
+                    inflow.Tags = tags;
+                    inflow.Notes = notes;
+                    SaveCashInFlows(inflows);
+                }
+            }
+            else if (type == "Outflow")
+            {
+                var outflows = LoadCashOutFlows();
+                var outflow = outflows.FirstOrDefault(o => o.Id == id);
+                if (outflow != null)
+                {
+                    outflow.Amount = amount;
+                    outflow.Category = category;
+                    outflow.Date = date;
+                    outflow.Tags = tags;
+                    outflow.Notes = notes;
+                    SaveCashOutFlows(outflows);
+                }
+            }
+        }
+        public void DeleteTransaction(string type, Guid id)
+        {
+            if (type == "Inflow")
+            {
+                var inflows = LoadCashInFlows();
+                inflows.RemoveAll(i => i.Id == id);
+                SaveCashInFlows(inflows);
+            }
+            else if (type == "Outflow")
+            {
+                var outflows = LoadCashOutFlows();
+                outflows.RemoveAll(o => o.Id == id);
+                SaveCashOutFlows(outflows);
+            }
+
+        }
+
+
+        public void ClearDebt(Guid debtId)
+        {
+            var debts = LoadDebts();
+            var debt = debts.FirstOrDefault(d => d.Id == debtId && !d.IsCleared);
+
+            if (debt != null && GetBalance() >= debt.Amount)
+            {
+                debt.IsCleared = true;
+                debt.ClearedDate = DateTime.Now;
+                debt.Notes = $"Cleared on {DateTime.Now.ToShortDateString()}"; // Example note
+                SaveDebts(debts);
+
+                // Optionally, deduct the cleared debt amount from balance by recording it as an outflow
+                var outflows = LoadCashOutFlows();
+                outflows.Add(new COF
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = debt.Amount,
+                    Category = "Debt Clearance",
+                    Date = DateTime.Now,
+                    Tags = "Debt",
+                    Notes = $"Cleared debt from {debt.Source}"
+                });
+                SaveCashOutFlows(outflows);
+            }
+            else if (debt != null)
+            {
+                throw new InvalidOperationException("Insufficient balance to clear the debt.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Debt not found or already cleared.");
+            }
+        }
+
+
+
+
+
     }
 }

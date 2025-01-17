@@ -11,12 +11,14 @@
 <div class="dashboard-container">
     <!-- Sidebar -->
     <div class="sidebar">
-        <h3>My Dashboard</h3>
+        <h3>Hisaab Kitaab</h3>
         <ul>
             <li><button class="nav-button @(CurrentView == "Home" ? "active" : "")" @onclick="ShowHome">Home</button></li>
             <li><button class="nav-button @(CurrentView == "Dashboard" ? "active" : "")" @onclick="ShowDashboard">Dashboard</button></li>
             <li><button class="nav-button @(CurrentView == "CashInFlow" ? "active" : "")" @onclick="ShowCashInFlow">Cash In Flow</button></li>
             <li><button class="nav-button @(CurrentView == "CashOutFlow" ? "active" : "")" @onclick="ShowCashOutFlow">Cash Out Flow</button></li>
+            <li><button class="nav-button @(CurrentView == "Debt" ? "active" : "")" @onclick="ShowDebt">Debt</button></li>
+            <li><button class="nav-button @(CurrentView == "Transactions" ? "active" : "")" @onclick="ShowTransactions">Transactions</button></li>
             <li><button class="logout-btn" @onclick="Logout">Logout</button></li>
         </ul>
     </div>
@@ -38,6 +40,14 @@
         else if (CurrentView == "CashOutFlow")
         {
             <CashOutFlowComponent />
+        }
+        else if (CurrentView == "Debt")
+        {
+            <DebtComponent />
+        }
+        else if (CurrentView == "Transactions")
+        {
+            <TransactionComponent />
         }
     </div>
 </div>
@@ -63,6 +73,16 @@
     private void ShowCashOutFlow()
     {
         CurrentView = "CashOutFlow";
+    }
+
+    private void ShowDebt()
+    {
+        CurrentView = "Debt";
+    }
+
+    private void ShowTransactions()
+    {
+        CurrentView = "Transactions";
     }
 
     private void Logout()
